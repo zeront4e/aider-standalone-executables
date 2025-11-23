@@ -38,6 +38,10 @@ jobs:
         run: |
           python -m pip install -U --upgrade-strategy only-if-needed aider-chat pyinstaller
 
+      - name: Install backport dependencies
+        run: |
+          python -m pip install backports.cached-property
+
       - name: Show installed versions (diagnostic)
         run: |
           python -c "import sys; print('Python', sys.version)"

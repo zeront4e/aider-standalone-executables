@@ -49,6 +49,8 @@ def main():
             "--noconfirm",
             "--console",
             "--collect-all", "aider",
+            "--hidden-import", "backports",
+            "--hidden-import", "backports.cached_property",
             str(LAUNCHER),
         ])
         built = PROJECT_ROOT / "dist" / "aider"
