@@ -15,9 +15,14 @@ jobs:
   build:
     name: Build binaries
     strategy:
-      fail-fast: false
       matrix:
-        os: [ubuntu-latest]
+        include:
+          - os: ubuntu-latest
+            target_name: aider-linux
+          - os: windows-latest
+            target_name: aider-windows
+          - os: macos-latest
+            target_name: aider-macos
 
     runs-on: ${{ matrix.os }}
 
@@ -48,15 +53,24 @@ jobs:
           python -c "import importlib.metadata as m; print('PyInstaller', m.version('pyinstaller'))"
           aider --version
 
-      - name: Build with PyInstaller
+      - name: Build with PyInstaller (capture logs)
         run: |
-          python scripts/build_with_pyinstaller.py
+          python scripts/build_with_pyinstaller.py 2>&1 | tee "${{ matrix.target_name }}.log"
 
-      - name: Upload artifact
+      - name: Generate checksums
+        run: |
+          cd dist
+          for f in *; do
+            sha256sum "$f" > "$f.sha256"
+          done
+
+      - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
           name: ${{ runner.os }}-aider
-          path: dist/*
+          path: |
+            dist/*
+            aider-*-x86_64.log
 
   release:
     name: Create GitHub release
@@ -94,3 +108,9 @@ jobs:
           prerelease: false
           files: |
             artifacts/*
+
+      - name: Update "latest" tag
+        run: |
+          git fetch --tags
+          git tag -f latest $GITHUB_SHA
+          git push origin latest --force
