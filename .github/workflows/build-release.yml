@@ -34,15 +34,15 @@ jobs:
         run: |
           python -m pip install --upgrade pip setuptools wheel
 
-      - name: Install latest Aider via aider-install and PyInstaller
+      - name: Install latest Aider via official command + PyInstaller
         run: |
-          python -m pip install --upgrade aider-install pyinstaller
+          python -m pip install -U --upgrade-strategy only-if-needed aider-chat pyinstaller
 
       - name: Show installed versions (diagnostic)
         run: |
           python -c "import sys; print('Python', sys.version)"
           python -c "import importlib.metadata as m; print('PyInstaller', m.version('pyinstaller'))"
-          python -c "import importlib.metadata as m; print('Aider', m.version('aider'))"
+          aider --version
 
       - name: Build with PyInstaller
         run: |
@@ -69,23 +69,12 @@ jobs:
 
       - name: Determine Aider version (best effort)
         run: |
-          python -m pip install --upgrade aider-install >/dev/null 2>&1 || true
-          python - <<'PY'
-          import os, datetime
-          try:
-              import importlib.metadata as m
-              ver = m.version('aider')
-          except Exception:
-              ver = 'unknown'
-          suffix = os.getenv('INPUT_TAG_SUFFIX', '').strip()
-          date = datetime.datetime.utcnow().strftime('%Y%m%d')
-          tag = f"aider-{ver}-{date}" if ver != 'unknown' else f"aider-latest-{date}"
-          if suffix:
-              tag = f"{tag}-{suffix}"
-          print(f"TAG={tag}")
-          with open(os.environ['GITHUB_ENV'], 'a') as f:
-              f.write(f"TAG={tag}\n")
-          PY
+          python -m pip install -U --upgrade-strategy only-if-needed aider-chat >/dev/null 2>&1 || true
+          TAG="aider-$(aider --version | awk '{print $2}')-$(date -u +%Y%m%d)"
+          if [ -n "${INPUT_TAG_SUFFIX}" ]; then
+            TAG="${TAG}-${INPUT_TAG_SUFFIX}"
+          fi
+          echo "TAG=${TAG}" >> $GITHUB_ENV
         env:
           INPUT_TAG_SUFFIX: ${{ inputs.tag_suffix }}
 
